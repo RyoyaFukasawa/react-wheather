@@ -10,6 +10,7 @@ export const fetchWeatherData = async (name, apiKey) => {
     return response.data;
   } catch (error) {
     console.log('Error fetching weather data:', error);
+    throw error;
   }
 };
 
@@ -58,7 +59,13 @@ export const Weather = () => {
     try {
       const data = await fetchWeatherData(city, apiKey);
       setWeatherData(data);
-      setComment(addComment(data.weather[0].description));
+
+      if (data === null || data === undefined) {
+        return;
+      }
+
+      const comment = addComment(data.weather[0].description);
+      setComment(comment);
     } catch (error) {
       console.error('Error fetching weather data:', error);
       setWeatherData(null);

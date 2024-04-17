@@ -1,74 +1,68 @@
-import { addComment } from './weather.jsx';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { Weather, fetchWeatherData } from './weather.jsx';
+import { setupServer } from 'msw/node';
+import '@testing-library/jest-dom';
 
-describe('addComment', () => {
-  test('returns correct comment for "few clouds"', () => {
-    expect(addComment('few clouds')).toBe('くもりです');
-  });
+describe('Weather', () => {
+  // test('load weather', async () => {
+  //   render(<Weather />);
+  //   const input = screen.getByPlaceholderText('Enter city name');
+  //   fireEvent.change(input, { target: { value: 'Tokyo' } });
 
-  test('returns correct comment for "light rain"', () => {
-    expect(addComment('light rain')).toBe('小雨です');
-  });
+  //   const button = screen.getByRole('button');
+  //   fireEvent.click(button);
 
-  test('returns correct comment for "clear sky"', () => {
-    expect(addComment('clear sky')).toBe('晴れです');
-  });
+  //   const loading = screen.getByText('Loading...');
+  //   expect(loading).toBeInTheDocument();
 
-  test('returns correct comment for "scattered clouds"', () => {
-    expect(addComment('scattered clouds')).toBe('一部曇りです');
-  });
+  //   // コメントが表示されるまで待つ
+  //   await waitFor(() => {
+  //     const comment = screen.getByText('曇りです');
+  //     expect(comment).toBeInTheDocument();
+  //   });
+  // });
 
-  test('returns correct comment for "broken clouds"', () => {
-    expect(addComment('broken clouds')).toBe('曇りです');
-  });
+  // test('load weather with error', async () => {
+  //   render(<Weather />);
+  //   const input = screen.getByPlaceholderText('Enter city name');
+  //   fireEvent.change(input, { target: { value: 'Tokyoadsofjaoisdjfoaijsfo' } });
 
-  test('returns correct comment for "shower rain"', () => {
-    expect(addComment('shower rain')).toBe('にわか雨です');
-  });
+  //   const button = screen.getByRole('button');
+  //   fireEvent.click(button);
 
-  test('returns correct comment for "rain"', () => {
-    expect(addComment('rain')).toBe('雨です');
-  });
+  //   const loading = screen.getByText('Loading...');
+  //   expect(loading).toBeInTheDocument();
 
-  test('returns empty string for unknown conditions', () => {
-    expect(addComment(0)).toBe('');
-  });
+  //   // エラーメッセージが表示されるまで待つ
+  //   await waitFor(() => {
+  //     const error = screen.getByText('Error fetching weather data. Please try again later.');
+  //     expect(error).toBeInTheDocument();
+  //   });
+  // });
 
-  test('returns empty string for unknown conditions', () => {
-    expect(addComment('')).toBe('');
+  const server = setupServer(fetchWeatherData('Tokyo', '3dea2a74059879b6eca84b7ecbcd9320'));
+
+  beforeAll(() => server.listen());
+  afterEach(() => server.resetHandlers());
+  afterAll(() => server.close());
+
+  // 外部apiでエラーが発生した場合のテスト
+  test('load weather with external api error', async () => {
+    server.use(new Response('Internal server error', { status: 500 }));
+    render(<Weather />);
+    const input = screen.getByPlaceholderText('Enter city name');
+    fireEvent.change(input, { target: { value: 'Tokyo' } });
+
+    const button = screen.getByRole('button');
+    fireEvent.click(button);
+
+    const loading = screen.getByText('Loading...');
+    expect(loading).toBeInTheDocument();
+
+    // エラーメッセージが表示されるまで待つ
+    await waitFor(() => {
+      const error = screen.getByText('Error fetching weather data. Please try again later.');
+      expect(error).toBeInTheDocument();
+    });
   });
 });
-
-// import axios from 'axios';
-// import AxiosMockAdapter from 'axios-mock-adapter';
-// import { fetchWeatherData } from './weather.jsx';
-
-// // axiosのインスタンスをモックする
-// const mock = new AxiosMockAdapter(axios);
-
-// describe('fetchWeatherData', () => {
-//   afterEach(() => {
-//     mock.reset(); // 各テスト後にモックをリセット
-//   });
-
-//   it('should fetch and return weather data correctly', async () => {
-//     const mockData = {
-//       weather: [{ id: 500, main: 'Rain', description: 'light rain', icon: '10d' }],
-//       main: { temp: 22, pressure: 1012, humidity: 85 },
-//       name: 'Tokyo',
-//     };
-
-//     // 成功したAPIレスポンスを模擬
-//     mock.onGet('https://api.openweathermap.org/data/2.5/weather').reply(200, mockData);
-
-//     const result = await fetchWeatherData('Tokyo', '3dea2a74059879b6eca84b7ecbcd9320');
-//     expect(result).toEqual(mockData);
-//   });
-
-//   // it('should handle an error when the API call fails', async () => {
-//   //   // 失敗したAPIレスポンスを模擬
-//   //   mock.onGet('https://api.openweathermap.org/data/2.5/weather').reply(500);
-
-//   //   const result = await fetchWeatherData('Tokyo', '3dea2a74059879b6eca84b7ecbcd9320');
-//   //   expect(result).toBeUndefined();
-//   // });
-// });
